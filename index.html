@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отправка медиа с кнопками</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .post-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input, textarea, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .button-list {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .button-item {
+            background-color: #f0f0f0;
+            padding: 5px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .button-item span {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        .button-item button {
+            background-color: #dc3545;
+            font-size: 12px;
+            padding: 5px 10px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="post-form">
+        <h2>📢 Отправка медиа с кнопками</h2>
+
+        <label for="media">Загрузите фото или видео:</label>
+        <input type="file" id="media" accept="image/*,video/*">
+
+        <label for="text">Текст поста:</label>
+        <textarea id="text" rows="4" placeholder="Введите текст поста"></textarea>
+
+        <h3>Добавить кнопки</h3>
+        <label for="buttonName">Название кнопки:</label>
+        <input type="text" id="buttonName" placeholder="Введите название кнопки">
+
+        <label for="buttonUrl">URL кнопки:</label>
+        <input type="text" id="buttonUrl" placeholder="Введите URL кнопки">
+
+        <button onclick="addButton()">Добавить кнопку</button>
+
+        <div class="button-list" id="buttonList"></div>
+
+        <button onclick="sendPost()">Отправить пост</button>
+    </div>
+
+    <script>
+        const botToken = "7886228251:AAEVOxCdOGvX7zGnsUT2o39Fyw-SIPT_b4g"; // Ваш токен бота
+        const chatId = "-1002130936135"; // Ваш ID чата
+
+        let buttons = []; // Список кнопок
+
+        // Добавление кнопки в список
+        function addButton() {
+            const name = document.getElementById("buttonName").value;
+            const url = document.getElementById("buttonUrl").value;
+
+            if (name && url) {
+                buttons.push({ text: name, url: url });
+                updateButtonList();
+                document.getElementById("buttonName").value = "";
+                document.getElementById("buttonUrl").value = "";
+            } else {
+                alert("Введите название и URL кнопки!");
+            }
+        }
+
+        // Обновление отображаемого списка кнопок
+        function updateButtonList() {
+            const buttonList = document.getElementById("buttonList");
+            buttonList.innerHTML = "";
+            buttons.forEach((button, index) => {
+                buttonList.innerHTML += `
+                    <div class="button-item">
+                        <span>🔗 ${button.text} - ${button.url}</span>
+                        <button onclick="removeButton(${index})">Удалить</button>
+                    </div>
+                `;
+            });
+        }
+
+        // Удаление кнопки из списка
+        function removeButton(index) {
+            buttons.splice(index, 1);
+            updateButtonList();
+        }
+
+        // Отправка поста с медиа и кнопками
+        function sendPost() {
+            const text = document.getElementById("text").value;
+            const mediaInput = document.getElementById("media");
+
+            if (!mediaInput.files.length || !text) {
+                alert("Пожалуйста, загрузите медиафайл и введите текст!");
+                return;
+            }
+
+            const file = mediaInput.files[0];
+            const formData = new FormData();
+            const isVideo = file.type.startsWith("video/");
+
+            formData.append("chat_id", chatId);
+            formData.append(isVideo ? "video" : "photo", file);
+            formData.append("caption", text);
+
+            // Добавляем инлайн-клавиатуру, если есть кнопки
+            if (buttons.length > 0) {
+                const replyMarkup = {
+                    inline_keyboard: buttons.map(button => [{ text: button.text, url: button.url }])
+                };
+                formData.append("reply_markup", JSON.stringify(replyMarkup));
+            }
+
+            const url = `https://api.telegram.org/bot${botToken}/${isVideo ? "sendVideo" : "sendPhoto"}`;
+
+            fetch(url, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    alert("Пост успешно отправлен!");
+                    // Очистка формы
+                    document.getElementById("media").value = "";
+                    document.getElementById("text").value = "";
+                    buttons = [];
+                    updateButtonList();
+                } else {
+                    alert("Ошибка отправки: " + result.description);
+                }
+            })
+            .catch(error => {
+                alert("Ошибка: " + error.message);
+            });
+        }
+    </script>
+</body>
+</html>
