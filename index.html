@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Отправка медиа с кнопками и форматированием</title>
+    <title>Отправка медиа с кнопками</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,7 +20,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 450px;
+            width: 400px;
         }
 
         h2 {
@@ -35,7 +35,7 @@
             margin-bottom: 5px;
         }
 
-        input, textarea, button, select {
+        input, textarea, button {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -62,54 +62,42 @@
 
         .button-list {
             margin-bottom: 10px;
+            font-size: 14px;
         }
 
         .button-item {
+            background-color: #f0f0f0;
+            padding: 5px;
+            margin-bottom: 5px;
+            border-radius: 4px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #f0f0f0;
-            padding: 5px;
-            border-radius: 4px;
-            margin-bottom: 5px;
+        }
+
+        .button-item span {
+            flex-grow: 1;
+            margin-right: 10px;
         }
 
         .button-item button {
             background-color: #dc3545;
-            padding: 5px 10px;
             font-size: 12px;
-        }
-
-        .format-options {
-            display: flex;
-            gap: 10px;
+            padding: 5px 10px;
+            margin: 0;
         }
     </style>
 </head>
 <body>
     <div class="post-form">
-        <h2>📢 Отправка медиа с кнопками и форматированием</h2>
+        <h2>📢 Отправка медиа с кнопками</h2>
 
-        <!-- Загрузка медиа -->
-        <label for="media">Загрузите фото или видео (несколько):</label>
-        <input type="file" id="media" multiple accept="image/*,video/*">
+        <label for="media">Загрузите фото или видео:</label>
+        <input type="file" id="media" accept="image/*,video/*">
 
-        <!-- Форматирование текста -->
         <label for="text">Текст поста:</label>
         <textarea id="text" rows="4" placeholder="Введите текст поста"></textarea>
 
-        <div class="format-options">
-            <select id="font-family">
-                <option value="Arial">Arial</option>
-                <option value="Verdana">Verdana</option>
-                <option value="Times New Roman">Times New Roman</option>
-            </select>
-            <input type="color" id="font-color" value="#000000">
-            <button onclick="applyStyle('bold')">B</button>
-            <button onclick="applyStyle('italic')"><i>I</i></button>
-        </div>
-
-        <!-- Добавление кнопок -->
         <h3>Добавить кнопки</h3>
         <label for="buttonName">Название кнопки:</label>
         <input type="text" id="buttonName" placeholder="Введите название кнопки">
@@ -121,17 +109,13 @@
 
         <div class="button-list" id="buttonList"></div>
 
-        <!-- Отправка -->
         <button onclick="sendPost()">Отправить пост</button>
     </div>
 
     <script>
-        const botToken = "ВАШ_ТОКЕН"; // Замените на токен бота
-        const chatId = "ВАШ_CHAT_ID"; // Замените на ваш Chat ID
-
         let buttons = []; // Список кнопок
 
-        // Добавление кнопок
+        // Добавление кнопки в список
         function addButton() {
             const name = document.getElementById("buttonName").value;
             const url = document.getElementById("buttonUrl").value;
@@ -146,6 +130,7 @@
             }
         }
 
+        // Обновление отображаемого списка кнопок
         function updateButtonList() {
             const buttonList = document.getElementById("buttonList");
             buttonList.innerHTML = "";
@@ -159,46 +144,33 @@
             });
         }
 
+        // Удаление кнопки из списка
         function removeButton(index) {
             buttons.splice(index, 1);
             updateButtonList();
         }
 
-        // Применение стилей к тексту
-        function applyStyle(style) {
-            const textarea = document.getElementById("text");
-            const selection = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-
-            if (!selection) return;
-
-            let newText = "";
-            if (style === "bold") newText = `**${selection}**`;
-            if (style === "italic") newText = `_${selection}_`;
-
-            textarea.setRangeText(newText);
-        }
-
-        // Отправка медиа с текстом и кнопками
+        // Отправка поста с медиа и кнопками
         function sendPost() {
+            const botToken = "7886228251:AAEVOxCdOGvX7zGnsUT2o39Fyw-SIPT_b4g"; // Ваш токен
+            const chatId = "-1002130936135"; // ID канала, начинающийся с -100
             const text = document.getElementById("text").value;
-            const files = document.getElementById("media").files;
+            const mediaInput = document.getElementById("media");
 
-            if (!files.length || !text) {
-                alert("Пожалуйста, загрузите медиафайлы и введите текст!");
+            if (!mediaInput.files.length || !text) {
+                alert("Пожалуйста, загрузите медиафайл и введите текст!");
                 return;
             }
 
+            const file = mediaInput.files[0];
             const formData = new FormData();
+            const isVideo = file.type.startsWith("video/");
+
             formData.append("chat_id", chatId);
-
-            // Добавляем медиа
-            for (let i = 0; i < files.length; i++) {
-                formData.append("media", files[i]);
-            }
-
+            formData.append(isVideo ? "video" : "photo", file);
             formData.append("caption", text);
 
-            // Добавляем кнопки
+            // Добавляем инлайн-клавиатуру, если есть кнопки
             if (buttons.length > 0) {
                 const replyMarkup = {
                     inline_keyboard: buttons.map(button => [{ text: button.text, url: button.url }])
@@ -206,7 +178,9 @@
                 formData.append("reply_markup", JSON.stringify(replyMarkup));
             }
 
-            fetch(`https://api.telegram.org/bot${botToken}/sendMediaGroup`, {
+            const url = `https://api.telegram.org/bot${botToken}/${isVideo ? "sendVideo" : "sendPhoto"}`;
+
+            fetch(url, {
                 method: "POST",
                 body: formData
             })
@@ -214,11 +188,18 @@
             .then(result => {
                 if (result.ok) {
                     alert("Пост успешно отправлен!");
+                    // Очистка формы
+                    document.getElementById("media").value = "";
+                    document.getElementById("text").value = "";
+                    buttons = [];
+                    updateButtonList();
                 } else {
-                    alert("Ошибка: " + result.description);
+                    alert("Ошибка отправки: " + result.description);
                 }
             })
-            .catch(error => alert("Ошибка: " + error.message));
+            .catch(error => {
+                alert("Ошибка: " + error.message);
+            });
         }
     </script>
 </body>
